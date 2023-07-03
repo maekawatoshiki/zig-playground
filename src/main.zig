@@ -1,62 +1,24 @@
-const mecha = @import("mecha");
 const std = @import("std");
 
-const Rgb = struct {
-    r: u8,
-    g: u8,
-    b: u8,
-};
+pub fn main() !void {
+    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
+    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
-fn toByte(v: u4) u8 {
-    return @as(u8, v) * 0x10 + v;
+    // stdout is for the actual output of your application, for example if you
+    // are implementing gzip, then only the compressed bytes should be sent to
+    // stdout, not any debugging messages.
+    const stdout_file = std.io.getStdOut().writer();
+    var bw = std.io.bufferedWriter(stdout_file);
+    const stdout = bw.writer();
+
+    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+
+    try bw.flush(); // don't forget to flush!
 }
 
-pub fn main() void {}
-
-const hex1 = mecha.map(u8, toByte, mecha.int(u4, .{
-    .parse_sign = false,
-    .base = 16,
-    .max_digits = 1,
-}));
-const hex2 = mecha.int(u8, .{
-    .parse_sign = false,
-    .base = 16,
-    .max_digits = 2,
-});
-const rgb1 = mecha.map(Rgb, mecha.toStruct(Rgb), mecha.manyN(hex1, 3, .{}));
-const rgb2 = mecha.map(Rgb, mecha.toStruct(Rgb), mecha.manyN(hex2, 3, .{}));
-const rgb = mecha.combine(.{
-    mecha.ascii.char('#'),
-    mecha.oneOf(.{
-        rgb2,
-        rgb1,
-    }),
-});
-
-test "rgb" {
-    const testing = std.testing;
-    const allocator = testing.allocator;
-    const a = (try rgb(allocator, "#aabbcc")).value;
-    try testing.expectEqual(@as(u8, 0xaa), a.r);
-    try testing.expectEqual(@as(u8, 0xbb), a.g);
-    try testing.expectEqual(@as(u8, 0xcc), a.b);
-
-    const b = (try rgb(allocator, "#abc")).value;
-    try testing.expectEqual(@as(u8, 0xaa), b.r);
-    try testing.expectEqual(@as(u8, 0xbb), b.g);
-    try testing.expectEqual(@as(u8, 0xcc), b.b);
-
-    const c = (try rgb(allocator, "#000000")).value;
-    try testing.expectEqual(@as(u8, 0), c.r);
-    try testing.expectEqual(@as(u8, 0), c.g);
-    try testing.expectEqual(@as(u8, 0), c.b);
-
-    const d = (try rgb(allocator, "#000")).value;
-    try testing.expectEqual(@as(u8, 0), d.r);
-    try testing.expectEqual(@as(u8, 0), d.g);
-    try testing.expectEqual(@as(u8, 0), d.b);
-}
-
-test "err" {
-    var x: anyerror!i32 = 0;
+test "simple test" {
+    var list = std.ArrayList(i32).init(std.testing.allocator);
+    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
+    try list.append(42);
+    try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
